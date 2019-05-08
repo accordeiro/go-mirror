@@ -1,0 +1,93 @@
+version: 2.1
+commands:
+  gofmt:
+    steps:
+      - checkout
+      - run:
+          name: Run gofmt
+          command: ./gofmt.sh
+
+  govet:
+    steps:
+      - checkout
+      - run:
+          name: Run govet
+          command: ./govet.sh
+
+  install_deps:
+    steps:
+      - checkout
+      - run:
+          name: Install dep
+          command: curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+      - restore_cache:
+          keys:
+            - v1-pkg-cache
+      - run:
+          name: Install project dependencies using dep
+          command: dep ensure -v
+      - save_cache:
+          key: v1-pkg-cache
+          paths:
+            - "/go/src/github.com/stellar/go/vendor"
+            - "/go/src/pkg/dep"
+
+  check_deprecations:
+    steps:
+      - run:
+          name: Run deprecation tests when on a tagged commit
+          command: |
+            if [ "$CIRCLE_TAG" != "" ]; then
+              # Negate the result so process exits with 1 if anything found
+              echo "Searching for deprecated values in Horizon..."
+              ! egrep -irn -A 1 --include=*.go "Deprecated.+-.+remove.+in:.+$CIRCLE_TAG" ./services/horizon/ ./protocols/horizon/
+            fi
+
+
+  test_packages:
+    steps:
+      - run:
+          name: Run package tests
+          command: ./support/scripts/run_tests
+
+  build_packages:
+    steps:
+      - run:
+          name: Build release artifacts
+          command: go run ./support/scripts/build_release_artifacts/main.go
+      - run:
+          name: Push snapshots tag
+          command: ./support/scripts/push_snapshots_tag.sh
+
+
+jobs:
+  check_code_1_10:
+    working_directory: /go/src/github.com/stellar/go
+    docker:
+      - image: circleci/golang:1.10
+    steps:
+      - govet
+
+  check_code_1_11:
+    working_directory: /go/src/github.com/stellar/go
+    docker:
+      - image: circleci/golang:1.11
+    steps:
+      - govet
+
+  check_code_1_12:
+    working_directory: /go/src/github.com/stellar/go
+    docker:
+      - image: circleci/golang:1.12
+    steps:
+      - gofmt
+      - govet
+
+
+workflows:
+  version: 2
+  check_code:
+    jobs:
+      - check_code_1_10
+      - check_code_1_11
+      - check_code_1_12
