@@ -14,6 +14,17 @@ commands:
           name: Run govet
           command: ./govet.sh
 
+  check_deprecations:
+    steps:
+      - run:
+          name: Run deprecation tests when on a tagged commit
+          command: |
+            if [ "$CIRCLE_TAG" != "" ]; then
+              # Negate the result so process exits with 1 if anything found
+              echo "Searching for deprecated values in Horizon..."
+              ! egrep -irn -A 1 --include=*.go "Deprecated.+-.+remove.+in:.+$CIRCLE_TAG" ./services/horizon/ ./protocols/horizon/
+            fi
+
   install_deps:
     steps:
       - checkout
@@ -32,18 +43,6 @@ commands:
             - "/go/src/github.com/stellar/go/vendor"
             - "/go/src/pkg/dep"
 
-  check_deprecations:
-    steps:
-      - run:
-          name: Run deprecation tests when on a tagged commit
-          command: |
-            if [ "$CIRCLE_TAG" != "" ]; then
-              # Negate the result so process exits with 1 if anything found
-              echo "Searching for deprecated values in Horizon..."
-              ! egrep -irn -A 1 --include=*.go "Deprecated.+-.+remove.+in:.+$CIRCLE_TAG" ./services/horizon/ ./protocols/horizon/
-            fi
-
-
   test_packages:
     steps:
       - run:
@@ -61,12 +60,14 @@ commands:
 
 
 jobs:
+  # Code analysis jobs:
   check_code_1_10:
     working_directory: /go/src/github.com/stellar/go
     docker:
       - image: circleci/golang:1.10
     steps:
       - govet
+      - check_deprecations
 
   check_code_1_11:
     working_directory: /go/src/github.com/stellar/go
@@ -74,6 +75,7 @@ jobs:
       - image: circleci/golang:1.11
     steps:
       - govet
+      - check_deprecations
 
   check_code_1_12:
     working_directory: /go/src/github.com/stellar/go
@@ -82,12 +84,42 @@ jobs:
     steps:
       - gofmt
       - govet
+      - check_deprecations
+
+
+  # Testing jobs:
+  test_code_1_10:
+    working_directory: /go/src/github.com/stellar/go
+    docker:
+      - image: circleci/golang:1.10
+    steps:
+      - install_deps
+      - test_packages
+
+  test_code_1_11:
+    working_directory: /go/src/github.com/stellar/go
+    docker:
+      - image: circleci/golang:1.11
+    steps:
+      - install_deps
+      - test_packages
+
+  test_code_1_12:
+    working_directory: /go/src/github.com/stellar/go
+    docker:
+      - image: circleci/golang:1.12
+    steps:
+      - install_deps
+      - test_packages
 
 
 workflows:
   version: 2
-  check_code:
+  check_code_and_test:
     jobs:
       - check_code_1_10
       - check_code_1_11
       - check_code_1_12
+      - test_code_1_10
+      - test_code_1_11
+      - test_code_1_12
