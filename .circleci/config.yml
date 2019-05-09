@@ -162,7 +162,7 @@ jobs:
       - install_deps
       - test_packages
 
-  publish-github-draft-release:
+  publish_github_draft_release:
     working_directory: /go/src/github.com/stellar/go
     docker:
       - image: circleci/golang:1.11
@@ -175,8 +175,7 @@ jobs:
           name: "Publish release on GitHub"
           command: |
             go get github.com/tcnksm/ghr
-            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete -draft -prerelease snapshots ./dist/
-
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -n "Snapshots $(date --utc +'%F-%T')" -delete -draft -prerelease snapshots ./dist/
 
 workflows:
   version: 2
@@ -191,7 +190,7 @@ workflows:
 
   build_and_deploy:
     jobs:
-      - publish-github-draft-release:
+      - publish_github_draft_release:
           filters:
             branches:
               only: master
