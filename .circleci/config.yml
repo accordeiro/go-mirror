@@ -241,7 +241,6 @@ workflows:
           filters:
             branches:
               only: master
-
       - publish_artifacts:
           filters:
               tags:
