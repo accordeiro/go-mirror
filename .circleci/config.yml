@@ -81,10 +81,6 @@ commands:
       - run:
           name: Build release artifacts
           command: go run ./support/scripts/build_release_artifacts/main.go
-      # - run:
-      #     name: Push snapshots tag
-      #     command: ./support/scripts/push_snapshots_tag.sh
-
 
 #-----------------------------------------------------------------------------#
 # Jobs use the commands to accomplish a given task, and run through workflows #
@@ -179,27 +175,6 @@ jobs:
       - install_go_deps
       - test_packages
 
-  # publish_gh_snapshots creates/updates a tag called "snapshots" pointing
-  # to the git commit it is building. It then creates a GitHub release and
-  # uploads all the built artifacts to it.
-  #
-  # NOTE: this commands relies on an env var called GITHUB_TOKEN which is a
-  # GH OAUTH token with `repo` access.
-  publish_gh_snapshots:
-    working_directory: /go/src/github.com/stellar/go
-    docker:
-      - image: circleci/golang:1.11
-    steps:
-      - install_go_deps
-      - build_packages
-      - attach_workspace:
-          at: ./dist
-      - run:
-          name: "Publish release on GitHub"
-          command: |
-            go get github.com/tcnksm/ghr
-            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -n "Snapshots $(date --utc +'%F-%T')" -delete -prerelease snapshots ./dist/
-
   # publish_artifacts builds and uploads artifacts to any tagged commit.
   #
   # NOTE: this commands relies on an env var called GITHUB_TOKEN which is a
@@ -237,10 +212,6 @@ workflows:
 
   build_and_deploy:
     jobs:
-      - publish_gh_snapshots:
-          filters:
-            branches:
-              only: master
       - publish_artifacts:
           filters:
               tags:
