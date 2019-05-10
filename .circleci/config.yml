@@ -198,7 +198,7 @@ jobs:
           name: "Publish release on GitHub"
           command: |
             go get github.com/tcnksm/ghr
-            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -n "Snapshots $(date --utc +'%F-%T')" -recreate -prerelease snapshots ./dist/
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -n "Snapshots $(date --utc +'%F-%T')" -delete -prerelease snapshots ./dist/
 
   # publish_artifacts builds and uploads artifacts to any tagged commit.
   #
